@@ -26,9 +26,8 @@ channels = {
     "etau": 1,
     "tautau": 2,
 }
-klub_extra_columns = [
-    # "DNNoutSM_kl_1",
-]
+cclub_extra_columns = []
+
 # "years" in all structures above actually mean "era", so define "datacard year" as the actual year of an era
 # for datacard purposes, as, for instance, eras "2016APV" and "2016" are both considered as datacard year "2016"
 datacard_years = {
@@ -36,6 +35,10 @@ datacard_years = {
     "2016": "2016",
     "2017": "2017",
     "2018": "2018",
+    "2022": "2022",
+    "2022EE": "2022",
+    "2023": "2023",
+    "2023BPix": "2023",
 }
 
 processes = OrderedDict({
@@ -177,6 +180,10 @@ skim_dirs = {
     "2016": os.environ["TN_SKIMS_2016"],
     "2017": os.environ["TN_SKIMS_2017"],
     "2018": os.environ["TN_SKIMS_2018"],
+    "2022": os.environ["TN_SKIMS_2022"],
+    "2022EE": os.environ["TN_SKIMS_2022EE"],
+    "2023": os.environ["TN_SKIMS_2023"],
+    "2023BPix": os.environ["TN_SKIMS_2023BPix"],
 }
 
 
@@ -211,6 +218,10 @@ luminosities = {
     "2016": 16_800.0,
     "2017": 41_480.0,
     "2018": 59_830.0,
+    "2022": 7_980.0,
+    "2022EE": 23_589.0,
+    "2023": 18_063.0,
+    "2023BPix": 9_693.0,
 }
 
 btag_wps = {
@@ -230,6 +241,22 @@ btag_wps = {
         "loose": 0.0490,
         "medium": 0.2783,
     },
+    "2022": {
+        "loose": 0.,
+        "medium": 0.,
+    },
+    "2022EE": {
+        "loose": 0.,
+        "medium": 0.,
+    },
+    "2023": {
+        "loose": 0.,
+        "medium": 0.,
+    },
+    "2023BPix": {
+        "loose": 0.,
+        "medium": 0.,
+    },
 }
 
 pnet_wps = {
@@ -237,6 +264,10 @@ pnet_wps = {
     "2016": 0.9137,
     "2017": 0.9105,
     "2018": 0.9172,
+    "2022": 0.,
+    "2022EE": 0.,
+    "2023": 0.,
+    "2023BPix": 0.,
 }
 
 
@@ -251,6 +282,8 @@ category_indices = {
     "tautau_res2b": 8,
     "tautau_boosted": 9,
 }
+
+## vbf categories
 
 
 @dataclass
@@ -279,6 +312,10 @@ class Sample:
         "2016": 1,
         "2017": 2,
         "2018": 3,
+        "2022": 4,
+        "2022EE": 5,
+        "2023": 6,
+        "2023BPix": 7,
     }
 
     def __hash__(self) -> int:
@@ -310,7 +347,7 @@ class Sample:
 
     @property
     def is_data(self) -> bool:
-        return self.name.startswith(("Tau", "Muon", "EGamma", "MET"))
+        return self.name.startswith(("Tau", "Muon", "EGamma", "MET")) ### update this
 
     def with_label_and_loss_weight(self, label: int | None, loss_weight: float = 1.0) -> Sample:
         return self.__class__(
@@ -656,27 +693,27 @@ cont_feature_sets = {
 cat_feature_sets = {
     "reg": [
         # order is important here since it is used as is for the tauNN
-        "pairType", "dau1_decayMode", "dau2_decayMode", "dau1_charge", "dau2_charge",
+        "pairType", "dau1_DM", "dau2_DM", "dau1_charge", "dau2_charge",
     ],
     "default": [
-        "pairType", "dau1_decayMode", "dau2_decayMode", "dau1_charge", "dau2_charge", "isBoosted",
+        "pairType", "dau1_DM", "dau2_DM", "dau1_charge", "dau2_charge", "hasBoostedAK4",
     ],
     "default_pnet": [
-        "pairType", "dau1_decayMode", "dau2_decayMode", "dau1_charge", "dau2_charge", "pass_pnet",
+        "pairType", "dau1_DM", "dau2_DM", "dau1_charge", "dau2_charge", "pass_pnet",
     ],
     "default_extended": [
-        "pairType", "dau1_decayMode", "dau2_decayMode", "dau1_charge", "dau2_charge", "isBoosted",
+        "pairType", "dau1_DM", "dau2_DM", "dau1_charge", "dau2_charge", "hasBoostedAK4",
         "has_bjet1", "has_bjet2",
     ],
     "default_extended_pair": [
-        "pairType", "dau1_decayMode", "dau2_decayMode", "dau1_charge", "dau2_charge", "isBoosted",
+        "pairType", "dau1_DM", "dau2_DM", "dau1_charge", "dau2_charge", "hasBoostedAK4",
         "has_bjet_pair",
     ],
     "full": (cat_features_full := [
-        "pairType", "dau1_decayMode", "dau2_decayMode", "dau1_charge", "dau2_charge", "isBoosted", "top_mass_idx",
+        "pairType", "dau1_DM", "dau2_DM", "dau1_charge", "dau2_charge", "hasBoostedAK4", "top_mass_idx",
     ]),
     "class": [
-        "isBoosted", "pairType", "has_vbf_pair",
+        "hasBoostedAK4", "pairType", "hasVBFAK4",
     ],
 }
 
@@ -684,116 +721,39 @@ cat_feature_sets = {
 # (in the latter case, the training script will choose the year automatically based on the sample)
 selection_sets = {
     "baseline": (baseline_selection := [
-        "nbjetscand > 1",
-        "nleps == 0",
         "isOS == 1",
-        "dau2_deepTauVsJet >= 5",
+        "dau2_tauIdVSjet >= 5",
         (
-            "((pairType == 0) & (dau1_iso < 0.15) & (isLeptrigger == 1)) | "
-            "((pairType == 1) & (dau1_eleMVAiso == 1) & (isLeptrigger == 1)) | "
-            "((pairType == 2) & (dau1_deepTauVsJet >= 5))"
+            "((pairType == 0) | "
+            "((pairType == 1) | "
+            "((pairType == 2) & (dau1_tauIdVSjet >= 5))"
         ),
     ]),
-    "baseline_lbtag": {
-        year: baseline_selection + [
-            f"(bjet1_bID_deepFlavor > {w['loose']}) | (bjet2_bID_deepFlavor > {w['loose']})",
-        ]
-        for year, w in btag_wps.items()
-    },
-    "signal": {
-        year: baseline_selection + [
-            (
-                f"(bjet1_bID_deepFlavor > {w['medium']}) | "
-                f"(bjet2_bID_deepFlavor > {w['medium']}) | "
-                f"((isBoosted == 1) & (bjet1_bID_deepFlavor > {w['loose']}) & (bjet2_bID_deepFlavor > {w['loose']}))"
-            ),
-        ]
-        for year, w in btag_wps.items()
-    },
-    "new_baseline": [
-        "nleps == 0",
-        "isOS == 1",
-        "dau2_deepTauVsJet >= 5",
-        "((nbjetscand > 1) | (isBoosted == 1))",
-        "((isLeptrigger == 1) | (isMETtrigger == 1) | (isSingleTautrigger == 1))",
-        (
-            "((pairType == 0) & (dau1_iso < 0.15)) | "
-            "((pairType == 1) & (dau1_eleMVAiso == 1)) | "
-            "((pairType == 2) & (dau1_deepTauVsJet >= 5))"
-        ),
-    ],
 }
 
-klub_aliases: dict[str, str] = {
-    "bjet1_btag_deepFlavor": "bjet1_bID_deepFlavor",
-    "bjet2_btag_deepFlavor": "bjet2_bID_deepFlavor",
-    "dau1_charge": "dau1_flav / abs(dau1_flav)",
-    "dau2_charge": "dau2_flav / abs(dau2_flav)",
-}
+cclub_aliases: dict[str, str] = {}
 
-klub_index_columns = [
-    "EventNumber",
-    "RunNumber",
-    "lumi",
+cclub_index_columns = [
+    "event",
+    "run",
+    "luminosityBlock",
 ]
 
-klub_category_columns = [
-    "pairType",
-    "nleps",
-    "isOS",
-    "nbjetscand",
-    "bjet1_bID_deepFlavor",
-    "bjet2_bID_deepFlavor",
-    "isBoosted",
-    "isLeptrigger",
-    "isMETtrigger",
-    "isSingleTautrigger",
-    "fatjet_particleNetMDJetTags_score",
-    "fatjet_softdropMass",
-    "dau1_iso",
-    "dau1_eleMVAiso",
-    "dau1_deepTauVsJet",
-    "dau2_deepTauVsJet",
-    "tauH_mass",
-    "bH_mass",
-    # preemptively add pt and eta values
-    *[
-        f"{obj}_{f}"
-        for obj in ["dau1", "dau2", "bjet1", "bjet2", "fatjet"]
-        for f in ["pt", "eta"]
-    ],
-]
+cclub_category_columns = []
 
-klub_weight_columns = [
-    "MC_weight",
-    "PUReweight",
-    "L1pref_weight",
+cclub_weight_columns = [
+    "genWeight",
+    "puWeight",
     "trigSF",
-    "dauSFs",
-    "PUjetID_SF",
+    "DYstitchWeight",
+    "idAndIsoAndFakeSF",
     "bTagweightReshape",
+    "PrescaleWeight_PNetTauTau0p03",
 ]
 
-klub_extra_weight_columns = [
-    "fatjet_particleNetMDJetTags_LP_SF",
-]
+cclub_extra_weight_columns = []
 
-reg_plot_columns = [
-    "dau1_px", "dau1_py", "dau1_pz", "dau1_e",
-    "dau2_px", "dau2_py", "dau2_pz", "dau2_e",
-    "bjet1_px", "bjet1_py", "bjet1_pz", "bjet1_e",
-    "bjet2_px", "bjet2_py", "bjet2_pz", "bjet2_e",
-    "met_px", "met_py",
-    "tauH_mass", "tauH_pt", "tauH_px", "tauH_py", "tauH_pz", "tauH_e",
-    "tauH_SVFIT_mass", "tauH_SVFIT_pt", "tauH_SVFIT_px", "tauH_SVFIT_py", "tauH_SVFIT_pz", "tauH_SVFIT_e",
-    "bH_px", "bH_py", "bH_pz", "bH_e",
-    "HH_mass", "HH_pt",
-    "svfit_HH_mass", "svfit_HH_pt",
-    "recoGenTauH_pt", "recoGenTauH_mass",
-    "genNu1_px", "genNu1_py", "genNu1_pz",
-    "genNu2_px", "genNu2_py", "genNu2_pz",
-    "recoGen_HH_pt", "recoGen_HH_mass",
-]
+reg_plot_columns = []
 
 dynamic_columns = {
     # columns needed for rotation
@@ -811,7 +771,11 @@ dynamic_columns = {
             ((year_flag == 0) & (pnet >= pnet_wps["2016APV"])) |
             ((year_flag == 1) & (pnet >= pnet_wps["2016"])) |
             ((year_flag == 2) & (pnet >= pnet_wps["2017"])) |
-            ((year_flag == 3) & (pnet >= pnet_wps["2018"]))
+            ((year_flag == 3) & (pnet >= pnet_wps["2018"])) |
+            ((year_flag == 4) & (pnet >= pnet_wps["2022"])) |
+            ((year_flag == 5) & (pnet >= pnet_wps["2022EE"])) |
+            ((year_flag == 6) & (pnet >= pnet_wps["2023"])) |
+            ((year_flag == 7) & (pnet >= pnet_wps["2023BPix"]))
         )),
     ),
     "has_bjet1": (
@@ -1020,8 +984,8 @@ dynamic_columns = {
     # masked fat jet features: when not 1, all features are set to 0
     **{
         f"fatjet_masked_{f}": (
-            (f"fatjet_{f}", "isBoosted"),
-            (lambda v, isBoosted: np.where(isBoosted, v, 0.0)),
+            (f"fatjet_{f}", "hasBoostedAK4"),
+            (lambda v, hasBoostedAK4: np.where(hasBoostedAK4, v, 0.0)),
         )
         for f in ["e", "px", "py", "pz"]
     },
@@ -1044,8 +1008,8 @@ dynamic_columns = {
     # masked httfatjet features
     **{
         f"httfatjet_masked_{f}": (
-            (f"htt_{f}", f"fatjet_masked_{f}", "isBoosted"),
-            (lambda f1, f2, isBoosted: np.where(isBoosted, f1 + f2, 0.0)),
+            (f"htt_{f}", f"fatjet_masked_{f}", "hasBoostedAK4"),
+            (lambda f1, f2, hasBoostedAK4: np.where(hasBoostedAK4, f1 + f2, 0.0)),
         )
         for f in ["e", "px", "py", "pz"]
     },
@@ -1221,13 +1185,13 @@ dynamic_columns = {
 
 embedding_expected_inputs = {
     "pairType": [0, 1, 2],
-    "dau1_decayMode": [-1, 0, 1, 10, 11],  # -1 for e/mu
-    "dau2_decayMode": [0, 1, 10, 11],
+    "dau1_DM": [-1, 0, 1, 10, 11],  # -1 for e/mu
+    "dau2_DM": [0, 1, 10, 11],
     "dau1_charge": [-1, 1],
     "dau2_charge": [-1, 1],
     "spin": [0, 2],
     "year": [0, 1, 2, 3],
-    "isBoosted": [0, 1],
+    "hasBoostedAK4": [0, 1],
     "pass_pnet": [0, 1],
     "top_mass_idx": [0, 1, 2, 3],
     "has_bjet1": [0, 1],

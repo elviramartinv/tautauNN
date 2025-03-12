@@ -137,23 +137,21 @@ def train(
     },
     # additional columns to load
     extra_columns: list[str] = [
-        "EventNumber", "MC_weight", "PUReweight",
+        "event", "genWeight", "puWeight", "trigSF", "DYstitchWeight", "idAndIsoAndFakeSF", "bTagweightReshape", "PrescaleWeight_PNetTauTau0p03"
     ],
     # selections to apply before training
     selections: str | list[str] | dict[str, list[str]] = [
-        "nbjetscand > 1",
-        "nleps == 0",
         "isOS == 1",
-        "dau2_deepTauVsJet >= 5",
+        "dau2_tauIdVSjet >= 5",
         (
-            "((pairType == 0) & (dau1_iso < 0.15) & (isLeptrigger == 1)) | "
-            "((pairType == 1) & (dau1_eleMVAiso == 1) & (isLeptrigger == 1)) | "
-            "((pairType == 2) & (dau1_deepTauVsJet >= 5))"
+            "((pairType == 0) | "
+            "((pairType == 1) | "
+            "((pairType == 2) & (dau1_tauIdVSjet >= 5))"
         ),
     ],
     # categorical input features for the network
     cat_input_names: list[str] = [
-        "pairType", "dau1_decayMode", "dau2_decayMode", "dau1_charge", "dau2_charge", "isBoosted", "top_mass_idx",
+        "pairType", "dau1_DM", "dau2_DM", "dau1_charge", "dau2_charge", "hasBoostedAK8", "top_mass_idx",
     ],
     # continuous input features to the network
     cont_input_names: list[str] = [
